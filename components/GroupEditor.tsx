@@ -125,20 +125,16 @@ export function GroupEditor() {
 
       {/* 가져오기/내보내기 버튼 */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <label className="cursor-pointer">
+        <label className="cursor-pointer inline-flex items-center justify-center rounded-lg font-medium transition-all text-xs px-3 py-1.5 bg-primary-500/10 text-primary-200 border border-primary-500/30 hover:bg-primary-500/20">
           <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} className="hidden" />
-          <Button variant="secondary" size="sm" asChild>
-            <span>📥 엑셀에서 불러오기</span>
-          </Button>
+          📥 엑셀에서 불러오기
         </label>
         <Button variant="secondary" size="sm" onClick={handleExportExcel}>
           📤 엑셀로 내보내기
         </Button>
-        <label className="cursor-pointer">
+        <label className="cursor-pointer inline-flex items-center justify-center rounded-lg font-medium transition-all text-xs px-3 py-1.5 bg-transparent text-foreground-muted hover:bg-primary-500/10 hover:text-primary-200">
           <input type="file" accept=".json" onChange={handleImportJson} className="hidden" />
-          <Button variant="ghost" size="sm" asChild>
-            <span>JSON 불러오기</span>
-          </Button>
+          JSON 불러오기
         </label>
         <Button variant="ghost" size="sm" onClick={handleExportJson}>
           JSON 내보내기
