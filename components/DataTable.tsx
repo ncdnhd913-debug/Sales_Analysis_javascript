@@ -9,9 +9,24 @@ import { cn } from '@/lib/utils';
 import { Button, Select } from './ui';
 import type { VarianceSummaryRow, VarianceDetailRow } from '@/lib/types';
 
+type SortableColumn = '매출0' | '매출1' | '총차이' | '수량차이' | '단가차이' | '환율차이';
+
 interface SortConfig {
-  column: string | null;
+  column: SortableColumn | null;
   direction: 'asc' | 'desc';
+}
+
+// 타입 안전한 값 접근 함수
+function getNumericValue(row: VarianceSummaryRow | VarianceDetailRow, col: SortableColumn): number {
+  switch (col) {
+    case '매출0': return row.매출0;
+    case '매출1': return row.매출1;
+    case '총차이': return row.총차이;
+    case '수량차이': return row.수량차이;
+    case '단가차이': return row.단가차이;
+    case '환율차이': return row.환율차이;
+    default: return 0;
+  }
 }
 
 export function DataTable() {
@@ -61,11 +76,9 @@ export function DataTable() {
   const sortedData = useMemo(() => {
     if (!sortConfig.column) return displayData;
     return [...displayData].sort((a, b) => {
-      const aVal = (a as Record<string, unknown>)[sortConfig.column!];
-      const bVal = (b as Record<string, unknown>)[sortConfig.column!];
-      const aNum = typeof aVal === 'number' ? aVal : 0;
-      const bNum = typeof bVal === 'number' ? bVal : 0;
-      return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
+      const aVal = getNumericValue(a, sortConfig.column!);
+      const bVal = getNumericValue(b, sortConfig.column!);
+      return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
     });
   }, [displayData, sortConfig]);
 
@@ -79,7 +92,7 @@ export function DataTable() {
     환율차이: sortedData.reduce((s, r) => s + r.환율차이, 0),
   }), [sortedData]);
 
-  const handleSort = (column: string) => {
+  const handleSort = (column: SortableColumn) => {
     setSortConfig((prev) => ({
       column,
       direction: prev.column === column && prev.direction === 'asc' ? 'desc' : 'asc',
@@ -103,7 +116,7 @@ export function DataTable() {
     );
   };
 
-  const moneyColumns = ['매출0', '매출1', '총차이', '수량차이', '단가차이', '환율차이'];
+  const numCols: SortableColumn[] = ['매출0', '매출1', '총차이', '수량차이', '단가차이', '환율차이'];
   const columnLabels: Record<string, string> = {
     품목명: '품목명',
     환종: '환종',
@@ -114,10 +127,6 @@ export function DataTable() {
     단가차이: '②단가차이',
     환율차이: '③환율차이',
   };
-
-  const columns = showDetail
-    ? ['품목명', '환종', '매출0', '매출1', '총차이', '수량차이', '단가차이', '환율차이']
-    : ['품목명', '매출0', '매출1', '총차이', '수량차이', '단가차이', '환율차이'];
 
   const dropdownOptions = [
     { value: '전체 합산', label: '전체 합산' },
@@ -160,14 +169,19 @@ export function DataTable() {
         <table className="w-full text-sm">
           <thead className="bg-primary-500/5">
             <tr>
-              {columns.map((col) => (
+              <th className="px-3 py-2 text-left font-medium text-foreground-muted">
+                품목명
+              </th>
+              {showDetail && (
+                <th className="px-3 py-2 text-left font-medium text-foreground-muted">
+                  환종
+                </th>
+              )}
+              {numCols.map((col) => (
                 <th
                   key={col}
-                  onClick={() => moneyColumns.includes(col) && handleSort(col)}
-                  className={cn(
-                    'px-3 py-2 text-left font-medium text-foreground-muted',
-                    moneyColumns.includes(col) && 'cursor-pointer hover:text-primary-300'
-                  )}
+                  onClick={() => handleSort(col)}
+                  className="px-3 py-2 text-right font-medium text-foreground-muted cursor-pointer hover:text-primary-300"
                 >
                   {columnLabels[col]}
                   {sortConfig.column === col && (
@@ -178,44 +192,50 @@ export function DataTable() {
             </tr>
           </thead>
           <tbody>
-            {sortedData.map((row, i) => (
-              <tr key={i} className="border-t border-primary-500/10 hover:bg-primary-500/5">
-                {columns.map((col) => {
-                  const value = (row as Record<string, unknown>)[col];
-                  const isNew = col === '품목명' && row.Q0 === 0;
-                  const isMoney = moneyColumns.includes(col);
-                  const numVal = typeof value === 'number' ? value : 0;
-
-                  return (
-                    <td
-                      key={col}
-                      className={cn(
-                        'px-3 py-2',
-                        isMoney && 'text-right font-mono',
-                        isMoney && numVal > 0 && 'text-success',
-                        isMoney && numVal < 0 && 'text-danger'
-                      )}
-                    >
-                      {isNew && <span className="text-info mr-1">🆕</span>}
-                      {isMoney ? formatNumber(numVal) : String(value ?? '')}
+            {sortedData.map((row, i) => {
+              const isNew = row.Q0 === 0;
+              return (
+                <tr key={i} className="border-t border-primary-500/10 hover:bg-primary-500/5">
+                  <td className="px-3 py-2">
+                    {isNew && <span className="text-info mr-1">🆕</span>}
+                    {row.품목명}
+                  </td>
+                  {showDetail && (
+                    <td className="px-3 py-2 text-foreground-muted">
+                      {'환종' in row ? row.환종 : ''}
                     </td>
-                  );
-                })}
-              </tr>
-            ))}
+                  )}
+                  {numCols.map((col) => {
+                    const numVal = getNumericValue(row, col);
+                    return (
+                      <td
+                        key={col}
+                        className={cn(
+                          'px-3 py-2 text-right font-mono',
+                          numVal > 0 && 'text-success',
+                          numVal < 0 && 'text-danger'
+                        )}
+                      >
+                        {formatNumber(numVal)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
             {/* 합계 행 */}
             <tr className="border-t-2 border-primary-500/30 bg-primary-500/10 font-bold">
               <td className="px-3 py-2" colSpan={showDetail ? 2 : 1}>【 합 계 】</td>
-              {moneyColumns.map((col) => (
+              {numCols.map((col) => (
                 <td
                   key={col}
                   className={cn(
                     'px-3 py-2 text-right font-mono',
-                    totals[col as keyof typeof totals] > 0 && 'text-success',
-                    totals[col as keyof typeof totals] < 0 && 'text-danger'
+                    totals[col] > 0 && 'text-success',
+                    totals[col] < 0 && 'text-danger'
                   )}
                 >
-                  {formatNumber(totals[col as keyof typeof totals])}
+                  {formatNumber(totals[col])}
                 </td>
               ))}
             </tr>
