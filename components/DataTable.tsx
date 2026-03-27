@@ -29,6 +29,11 @@ function getNumericValue(row: VarianceSummaryRow | VarianceDetailRow, col: Sorta
   }
 }
 
+// VarianceDetailRow 타입 가드
+function isDetailRow(row: VarianceSummaryRow | VarianceDetailRow): row is VarianceDetailRow {
+  return '환종' in row;
+}
+
 export function DataTable() {
   const { summary, detail, period, showDetail, model } = useDataStore();
   const { selectedGroups, buildGroups } = useGroupStore();
@@ -194,6 +199,7 @@ export function DataTable() {
           <tbody>
             {sortedData.map((row, i) => {
               const isNew = row.Q0 === 0;
+              const currencyType = isDetailRow(row) ? row.환종 : '';
               return (
                 <tr key={i} className="border-t border-primary-500/10 hover:bg-primary-500/5">
                   <td className="px-3 py-2">
@@ -202,7 +208,7 @@ export function DataTable() {
                   </td>
                   {showDetail && (
                     <td className="px-3 py-2 text-foreground-muted">
-                      {'환종' in row ? row.환종 : ''}
+                      {currencyType}
                     </td>
                   )}
                   {numCols.map((col) => {
